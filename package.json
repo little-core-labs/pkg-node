@@ -1,6 +1,6 @@
 {
   "name": "pkg-node",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Run a version of Node patched by 'pkg-fetch'.",
   "main": "index.js",
   "bin": {
