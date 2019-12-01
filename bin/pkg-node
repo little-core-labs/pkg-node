@@ -1,0 +1,130 @@
+#!/usr/bin/env node
+const { system } = require('pkg-fetch')
+const { start } = require('../')
+const minimist = require('minimist')
+const semver = require('semver')
+const glob = require('glob')
+const path = require('path')
+
+/**
+ * Environment variables that can configure the Node platform, version,
+ * and architecture initialization settings.
+ * @private
+ */
+const {
+  PKG_NODE_PLATFORM,
+  PKG_NODE_VERSION,
+  PKG_NODE_ARCH,
+} = process.env
+
+// usage: pkg-node [--list-available]
+//        pkg-node [--arch <arch>] [--platform <platform>] [--target <target>]
+//                 [--] ...[node options]
+const argv = minimist(process.argv.slice(2), {
+  stopEarly: true,
+  string: ['arch', 'platform', 'target'],
+  boolean: ['list-available'],
+
+  alias: {
+    l: 'list',
+    list: 'list-available',
+    t: 'target'
+  },
+
+  default: {
+    arch: PKG_NODE_ARCH,
+    platform: PKG_NODE_PLATFORM,
+    target: PKG_NODE_VERSION,
+  }
+})
+
+// output known versions
+if (argv.list) {
+  const dirname = path.dirname(require.resolve('pkg-fetch/package.json'))
+  const patches = glob.sync(path.resolve(dirname, 'patches', 'node.*.patch'))
+  const versions = []
+
+  console.log('> Available versions:')
+  for (const patch of patches) {
+    const basename = path.basename(patch)
+    const { version } = semver.parse(basename.match(/node\.(.*)\.cpp\.patch/)[1])
+    versions.push(version)
+  }
+  console.log(versions.sort(semver.gt).map((v) => `  - ${v}`).join('\n'))
+
+  console.log()
+  console.log('> Available platforms:')
+  console.log(system.knownPlatforms.sort().map((p) => `  - ${p}`).join('\n'))
+
+  console.log()
+  console.log('> Available architectures:')
+  console.log(system.knownArchs.sort().map((a) => `  - ${a}`).join('\n'))
+  process.exit(0)
+}
+
+/**
+ * Node initialization settings for downloading, building,
+ * and launching a version of a `node` process for a platform
+ * and architecture.
+ * @private
+ */
+const opts = {
+  platform: argv.platform,
+  version: argv.target,
+  arch: argv.arch,
+  args: argv._.slice()
+}
+
+if (argv.h && !opts.args.includes('-h')) {
+  opts.args.push('-h')
+}
+
+if (argv.help && !opts.args.includes('--help')) {
+  opts.args.push('--help')
+}
+
+// start the node process
+start(opts)
+  .then(onprocess, onerror)
+  .catch(onerror)
+
+/**
+ * Called when the child process is opened, resolved, and
+ * returned to the caller.
+ * @private
+ */
+function onprocess(child) {
+  child.process.on('exit', onexit)
+  child.process.on('close', onclose)
+  child.process.on('error', onerror)
+}
+
+/**
+ * Handles spawned `node` process exit event.
+ * Will queue `onclose(code)` for next tick.
+ * @private
+ */
+function onexit(code, signal) {
+  process.nextTick(onclose, code)
+}
+
+/**
+ * Handles spawned `close` process exit event.
+ * @private
+ */
+function onclose(code) {
+  process.nextTick(process.exit, code)
+}
+
+/**
+ * Handles errors from `.catch()` and 'error' events, which
+ * should be treated as fatal.
+ * @private
+ */
+function onerror(err) {
+  if (err) {
+    const code = parseInt(err.code || 1)
+    console.error(err.stack || err)
+    process.nextTick(process.exit, code || 1)
+  }
+}

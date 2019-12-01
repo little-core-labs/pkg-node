@@ -1,0 +1,37 @@
+{
+  "name": "pkg-node",
+  "version": "0.0.0",
+  "description": "Run a version of Node patched by 'pkg-fetch'.",
+  "main": "index.js",
+  "bin": {
+    "pkg-node": "bin/pkg-node"
+  },
+  "scripts": {
+    "test": ":"
+  },
+  "keywords": [
+    "pkg",
+    "node",
+    "run",
+    "script"
+  ],
+  "author": "Joseph Werle <joseph.werle@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "glob": "^7.1.6",
+    "minimist": "^1.2.0",
+    "nanoprocess": "^0.8.0",
+    "pify": "^4.0.1",
+    "pkg-fetch": "^2.6.2",
+    "semver": "^6.3.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/little-core-labs/pkg-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/little-core-labs/pkg-node/issues"
+  },
+  "homepage": "https://github.com/little-core-labs/pkg-node#readme"
+}
